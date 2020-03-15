@@ -44,10 +44,14 @@ def binary_classification_metrics(prediction, ground_truth):
 
 def multiclass_accuracy(prediction, ground_truth):
     accuracy = 0
-    len_predict = len(prediction)
+    correct = 0
 
-    for i in range(len_predict):
+    for i in range(ground_truth.shape[0]):
         if prediction[i] == ground_truth[i]:
-            accuracy += 1
+            correct += 1
 
-    return accuracy / len_predict
+    if prediction.shape[0] != 0:
+        accuracy = correct / prediction.shape[0]
+    else:
+        accuracy = 0
+    return accuracy

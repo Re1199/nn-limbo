@@ -32,11 +32,11 @@ class ConvNet:
 
         self.conv1 = ConvolutionalLayer(input_channels, conv1_channels, 3, 1)
         self.ReLU1 = ReLULayer()
-        self.pool1 = MaxPoolingLayer(4, 4)
+        self.MaxPool1 = MaxPoolingLayer(4, 4)
 
         self.conv2 = ConvolutionalLayer(conv1_channels, conv2_channels, 3, 1)
         self.ReLU2 = ReLULayer()
-        self.pool2 = MaxPoolingLayer(4, 4)
+        self.MaxPool2 = MaxPoolingLayer(4, 4)
 
         self.flat = Flattener()
         self.fc = FullyConnectedLayer(4 * conv2_channels, n_output_classes)
@@ -57,31 +57,44 @@ class ConvNet:
         # Don't worry about implementing L2 regularization, we will not
         # need it in this assignment
 
-        for i in self.params():
-            self.params()[i].grad = np.zeros_like(self.params()[i].value)
+        for param in self.params().values():
+            param.grad = np.zeros_like(param.value)
 
-        out = self.pool1.forward(self.ReLU1.forward(self.conv1.forward(X)))
-        out = self.pool2.forward(self.ReLU2.forward(self.conv2.forward(out)))
-        out = self.fc.forward(self.flat.forward(out))
+        preds = self.conv1.forward(X)
+        preds = self.ReLU1.forward(preds)
+        preds = self.MaxPool1.forward(preds)
+        preds = self.conv2.forward(preds)
+        preds = self.ReLU2.forward(preds)
+        preds = self.MaxPool2.forward(preds)
+        preds = self.flat.forward(preds)
+        preds = self.fc.forward(preds)
 
-        loss, grad = softmax_with_cross_entropy(out, y)
+        loss, grad = softmax_with_cross_entropy(preds, y)
 
-        grad = self.flat.backward(self.fc.backward(grad))
-        grad = self.conv2.backward(self.ReLU2.backward(self.pool2.backward(grad)))
-        grad = self.conv1.backward(self.ReLU1.backward(self.pool1.backward(grad)))
+        grad = self.fc.backward(grad)
+        grad = self.flat.backward(grad)
+        grad = self.MaxPool2.backward(grad)
+        grad = self.ReLU2.backward(grad)
+        grad = self.conv2.backward(grad)
+        grad = self.MaxPool1.backward(grad)
+        grad = self.ReLU1.backward(grad)
+        grad = self.conv1.backward(grad)
 
         return loss
 
     def predict(self, X):
         # You can probably copy the code from previous assignment
-        out = self.pool1.forward(self.ReLU1.forward(self.conv1.forward(X)))
-        out = self.pool2.forward(self.ReLU2.forward(self.conv2.forward(out)))
-        out = self.fc.forward(self.flat.forward(out))
+        preds = self.conv1.forward(X)
+        preds = self.ReLU1.forward(preds)
+        preds = self.MaxPool1.forward(preds)
+        preds = self.conv2.forward(preds)
+        preds = self.ReLU2.forward(preds)
+        preds = self.MaxPool2.forward(preds)
+        preds = self.flat.forward(preds)
+        preds = self.fc.forward(preds)
 
-        predictions = softmax(out)
-        pred = np.argmax(predictions, axis=1)
-
-        return pred
+        probs = softmax(preds)
+        return np.argmax(probs, axis=1)
 
     def params(self):
         # TODO: Aggregate all the params from all the layers
